@@ -15,76 +15,8 @@
     <div class="card-body p-4">
         <form method="post" novalidate class="needs-validation">
             {% csrf_token %}
-            
-            <!-- Ürün ve Müşteri Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    {{ form.product|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    {{ form.customer|as_crispy_field }}
-                </div>
-            </div>
+            {{ form|crispy }}
 
-            <!-- Tedarikçi -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    {{ form.supplier|as_crispy_field }}
-                </div>
-            </div>
-
-            <!-- Termin ve Miktar -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    {{ form.deadline_date|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    {{ form.meters|as_crispy_field }}
-                </div>
-            </div>
-
-            <!-- Fiyat Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    {{ form.purchase_price|as_crispy_field }}
-                </div>
-                <div class="col-md-4">
-                    {{ form.sale_price|as_crispy_field }}
-                </div>
-                <div class="col-md-4">
-                    {{ form.currency|as_crispy_field }}
-                </div>
-            </div>
-
-            <!-- Hesaplanan Tutarlar -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Toplam Alış Tutarı</label>
-                        <input type="text" class="form-control" id="total_purchase" readonly>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Toplam Satış Tutarı</label>
-                        <input type="text" class="form-control" id="total_sale" readonly>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Tahmini Kar</label>
-                        <input type="text" class="form-control" id="expected_profit" readonly>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notlar -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    {{ form.notes|as_crispy_field }}
-                </div>
-            </div>
-            
             <!-- Form Butonları -->
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                 <a href="{% url 'order_list' %}" class="btn btn-outline-secondary me-md-2">
@@ -200,4 +132,4 @@
     });
 </script>
 {% endblock %}
-{% endblock %} 
+{% endblock %}

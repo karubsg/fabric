@@ -9,26 +9,44 @@
     --danger-color: #e74c3c;
     --light-color: #ecf0f1;
     --dark-color: #2c3e50;
+    --primary-blue: #2196f3;
+    --success-green: #4caf50;
+    --warning-orange: #ff9800;
+    --danger-red: #f44336;
 }
 
-/* Genel Stiller */
+/* Genel Font Ayarları */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
     background-color: #f8f9fa;
-    color: var(--dark-color);
 }
 
-/* Kartlar */
+/* Dashboard Kartları */
 .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: none;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
     background: white;
 }
 
 .card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    border-bottom: none;
+    background: transparent;
+    padding: 1.5rem;
+}
+
+.card .display-4 {
+    font-size: 2.5rem;
+    font-weight: 600;
 }
 
 /* Butonlar */
@@ -62,17 +80,23 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }
 
-/* Tablolar */
+/* Tablo Tasarımı */
 .table {
+    font-size: 0.9rem;
     border-radius: 10px;
     overflow: hidden;
 }
 
 .table thead th {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
+    font-weight: 600;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
     padding: 1rem;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem;
 }
 
 .table tbody td {
@@ -106,6 +130,10 @@ body {
 
 /* Responsive Tasarım */
 @media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
     .card {
         margin-bottom: 1rem;
     }
@@ -183,4 +211,36 @@ body {
 /* Modal gövdesi için */
 .modal-body {
     padding: 20px; /* İçerik alanı için dolgu */
+}
+
+/* Yeni Stil Eklentileri */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.stat-card .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.stat-card .stat-title {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
 }

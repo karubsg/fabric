@@ -9,11 +9,7 @@ urlpatterns = [
     path('products/add/', views.add_product, name='add_product'),
     path('products/<int:pk>/', views.product_detail, name='product_detail'),
     path('products/<int:pk>/delete/', views.delete_product, name='delete_product'),
-    # Satış işlemleri
-    path('sales/', views.sale_list, name='sale_list'),
-    path('sales/add/', views.add_sale, name='add_sale'),
-    path('sales/<int:pk>/delete/', views.delete_sale, name='delete_sale'),
-    path('sales/<int:sale_id>/cancel/', views.cancel_sale, name='cancel_sale'),
+    # Satış işlemleri artık sipariş işlemleri ile birleştirildi
     # Ödeme işlemleri
     path('payments/', views.payment_list, name='payment_list'),
     path('payments/add/', views.add_payment, name='add_payment'),

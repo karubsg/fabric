@@ -15,14 +15,11 @@ CURRENCY_CHOICES = [
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['supplier_product_name', 'name', 'supplier', 'purchase_price', 'sale_price', 'currency']
+        fields = ['supplier_product_name', 'name', 'supplier']
         labels = {
             'supplier_product_name': 'Tedarikçi Ürün Adı',
             'name': 'Firma Ürün Adı',
-            'supplier': 'Tedarikçi',
-            'purchase_price': 'Alış Fiyatı (Metre)',
-            'sale_price': 'Satış Fiyatı (Metre)',
-            'currency': 'Para Birimi'
+            'supplier': 'Tedarikçi'
         }
         widgets = {
             'supplier_product_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tedarikçinin ürün adını giriniz'}),
@@ -46,21 +43,11 @@ class ProductForm(forms.ModelForm):
             Row(
                 Column('supplier', css_class='form-group col-md-12 mb-3'),
                 css_class='form-row'
-            ),
-            Row(
-                Column('purchase_price', css_class='form-group col-md-6 mb-3'),
-                Column('sale_price', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
-            Row(
-                Column('currency', css_class='form-group col-md-6 mb-3'),
-                css_class='form-row'
-            ),
+            )
         )
 
-    # Yeni eklemeler: Tedarikçi ve Para Birimi için özel alanlar
+    # Tedarikçi için özel alan
     supplier = forms.ModelChoiceField(queryset=Supplier.objects.all(), label="Tedarikçi")
-    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label="Para Birimi")
 
 class SaleForm(forms.ModelForm):
     class Meta:
@@ -98,6 +85,17 @@ class SaleForm(forms.ModelForm):
         return meters
 
 class PaymentForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sadece ödenmemiş satışları göster ve kalan ödeme bilgisini ekle
+        unpaid_sales = Sale.objects.filter(is_paid=False)
+        sale_choices = []
+        for sale in unpaid_sales:
+            remaining = sale.remaining_payment
+            sale_text = f"{sale.customer.name} - {sale.product.name} - Kalan: {sale.currency}{remaining:,.2f}"
+            sale_choices.append((sale.id, sale_text))
+        self.fields['sale'].choices = sale_choices
+
     class Meta:
         model = Payment
         fields = ['sale', 'amount', 'currency', 'date', 'status', 'notes']
@@ -127,24 +125,24 @@ class PaymentForm(forms.ModelForm):
 class SupplierForm(forms.ModelForm):
     class Meta:
         model = Supplier
-        fields = ['name']
+        fields = ['name', 'phone', 'email', 'address']
         labels = {
-            'name': 'Tedarikçi Adı'
+            'name': 'Tedarikçi Adı',
+            'phone': 'Telefon',
+            'email': 'E-posta',
+            'address': 'Adres'
         }
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tedarikçi adını giriniz'})
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
+        self.helper = FormHelper(self)
         self.helper.form_tag = False
-        self.helper.layout = Layout(
-            Row(
-                Column('name', css_class='form-group col-md-12 mb-3'),
-                css_class='form-row'
-            ),
-        )
 
 class OrderForm(forms.ModelForm):
     class Meta:
@@ -159,6 +157,6 @@ class OrderForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         deadline_date = cleaned_data.get('deadline_date')
-        if deadline_date and deadline_date < timezone.now().date():
+        if (deadline_date and deadline_date < timezone.now().date()):
             raise forms.ValidationError("Termin tarihi geçmiştir!")
         return cleaned_data

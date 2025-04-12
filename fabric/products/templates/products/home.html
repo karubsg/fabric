@@ -1,114 +1,176 @@
 {% extends 'products/base.html' %}
 
 {% block title %}Ana Sayfa - FabricCRM{% endblock %}
-{% block header %}Ana Sayfa{% endblock %}
+{% block header %}Hoş Geldiniz{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-  <div class="col-md-3">
-    <div class="card bg-primary text-white h-100">
-      <div class="card-header border-0">
-        <i class="bi bi-graph-up-arrow float-end"></i>
-        <h5 class="card-title mb-0">Bugünkü Satış</h5>
-      </div>
-      <div class="card-body">
-        <h2 class="display-4 mb-0">{{ today_sales }}</h2>
-        <p class="text-white-50 mt-2">₺</p>
-      </div>
+<!-- Hızlı Erişim Menüsü -->
+<div class="mb-4">
+    <div class="quick-access-menu d-flex flex-wrap gap-2">
+        <a href="{% url 'add_product' %}" class="btn btn-success">
+            <i class="bi bi-box-seam"></i> Yeni Ürün
+        </a>
+        <a href="{% url 'add_payment' %}" class="btn btn-info text-white">
+            <i class="bi bi-cash"></i> Yeni Ödeme
+        </a>
+        <a href="{% url 'add_order' %}" class="btn btn-warning">
+            <i class="bi bi-clipboard-plus"></i> Yeni Sipariş
+        </a>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card bg-success text-white h-100">
-      <div class="card-header border-0">
-        <i class="bi bi-cash-stack float-end"></i>
-        <h5 class="card-title mb-0">Toplam Satış</h5>
-      </div>
-      <div class="card-body">
-        <h2 class="display-4 mb-0">{{ total_sales }}</h2>
-        <p class="text-white-50 mt-2">₺</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card bg-info text-white h-100">
-      <div class="card-header border-0">
-        <i class="bi bi-box-seam float-end"></i>
-        <h5 class="card-title mb-0">Toplam Ürün</h5>
-      </div>
-      <div class="card-body">
-        <h2 class="display-4 mb-0">{{ total_products }}</h2>
-        <p class="text-white-50 mt-2">Adet</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card bg-warning text-white h-100">
-      <div class="card-header border-0">
-        <i class="bi bi-cash-coin float-end"></i>
-        <h5 class="card-title mb-0">Bugünkü Ödemeler</h5>
-      </div>
-      <div class="card-body">
-        <h2 class="display-4 mb-0">{{ today_payments }}</h2>
-        <p class="text-white-50 mt-2">₺</p>
-      </div>
-    </div>
-  </div>
 </div>
 
-<div class="row mt-4">
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header bg-white">
-        <h5 class="card-title mb-0">Son Satışlar</h5>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Tarih</th>
-                <th>Ürün</th>
-                <th>Miktar</th>
-                <th>Tutar</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Burada son satışlar listelenecek -->
-              <tr>
-                <td colspan="4" class="text-center">Henüz satış bulunmuyor</td>
-              </tr>
-            </tbody>
-          </table>
+<!-- İstatistik Kartları -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100 bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="card-subtitle mb-2">Bugünkü Siparişler</h6>
+                        <h2 class="mb-0">{{ today_orders }}</h2>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header bg-white">
-        <h5 class="card-title mb-0">Son Ödemeler</h5>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Tarih</th>
-                <th>Satış</th>
-                <th>Tutar</th>
-                <th>Durum</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Burada son ödemeler listelenecek -->
-              <tr>
-                <td colspan="4" class="text-center">Henüz ödeme bulunmuyor</td>
-              </tr>
-            </tbody>
-          </table>
+    <div class="col-md-3">
+        <div class="card h-100 bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="card-subtitle mb-2">Toplam Siparişler</h6>
+                        <h2 class="mb-0">{{ total_orders }}</h2>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
+    <div class="col-md-3">
+        <div class="card h-100 bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="card-subtitle mb-2">Toplam Ürün</h6>
+                        <h2 class="mb-0">{{ total_products }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="card-subtitle mb-2">Bugünkü Ödemeler</h6>
+                        <h2 class="mb-0">{{ today_payments }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aktivite Bölümü -->
+<div class="row">
+    <!-- Son Siparişler -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Son Siparişler</h5>
+                <a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Ürün</th>
+                                <th>Müşteri</th>
+                                <th class="text-end">Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_date|date:"d.m.Y" }}</td>
+                                <td>{{ order.product.name }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td class="text-end">{{ order.total_sale_amount }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-info-circle me-2"></i>Henüz sipariş bulunmuyor
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Son Ödemeler -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Son Ödemeler</h5>
+                <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Satış No</th>
+                                <th>Tutar</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td>{{ payment.date|date:"d.m.Y" }}</td>
+                                <td>#{{ payment.sale.id }}</td>
+                                <td>{{ payment.amount }}</td>
+                                <td>
+                                    <span class="badge {% if payment.status == 'paid' %}bg-success{% elif payment.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ payment.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-info-circle me-2"></i>Henüz ödeme bulunmuyor
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

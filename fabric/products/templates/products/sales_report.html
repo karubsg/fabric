@@ -19,9 +19,9 @@
     </select>
     <select name="currency" class="form-select">
         <option value="">Tüm Para Birimleri</option>
-        <option value="TRY" {% if selected_currency == 'TRY' %}selected{% endif %}>₺ TL</option>
-        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>$ USD</option>
-        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>€ EUR</option>
+        <option value="TL" {% if selected_currency == 'TL' %}selected{% endif %}>₺ (TL)</option>
+        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>$ (USD)</option>
+        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>€ (EUR)</option>
     </select>
     <button type="submit" class="btn btn-outline-primary">
         <i class="bi bi-search"></i> Filtrele

@@ -15,48 +15,7 @@
     <div class="card-body p-4">
         <form method="post" novalidate class="needs-validation">
             {% csrf_token %}
-            
-            <!-- Tedarikçi Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    {{ form.supplier|as_crispy_field }}
-                </div>
-            </div>
-
-            <!-- Ürün Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    {{ form.supplier_product_name|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    {{ form.name|as_crispy_field }}
-                </div>
-            </div>
-
-            <!-- Fiyat Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    {{ form.purchase_price|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    {{ form.sale_price|as_crispy_field }}
-                </div>
-            </div>
-            
-            <!-- Para Birimi -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    {{ form.currency|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">Tahmini Kar Marjı (%)</label>
-                        <input type="text" class="form-control" id="profit_margin" readonly>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Form Butonları -->
+            {% crispy form %}
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                 <a href="{% url 'product_list' %}" class="btn btn-outline-secondary me-md-2">
                     <i class="bi bi-x-circle"></i> İptal

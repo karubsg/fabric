@@ -7,19 +7,18 @@ import random
 from decimal import Decimal
 
 class Command(BaseCommand):
-    help = 'Create test data for the application'
+    help = 'Create comprehensive test data for the application'
 
     def handle(self, *args, **kwargs):
-        # Mevcut verileri sil
+        # Clear existing data
         self.clear_data()
 
-        # Yeni test verilerini oluştur
+        # Create new test data
         self.create_test_data()
 
-        self.stdout.write(self.style.SUCCESS('Test verileri başarıyla oluşturuldu.'))
+        self.stdout.write(self.style.SUCCESS('Comprehensive test data created successfully.'))
 
     def clear_data(self):
-        # Tüm verileri sil
         Sale.objects.all().delete()
         Payment.objects.all().delete()
         Order.objects.all().delete()
@@ -28,27 +27,25 @@ class Command(BaseCommand):
         Supplier.objects.all().delete()
 
     def create_test_data(self):
-        # Tedarikçi verileri oluştur
+        # Create suppliers
         suppliers = [
-            Supplier.objects.create(name='ABC Tekstil', phone='1234567890', email='abc@textile.com', address='İstanbul'),
-            Supplier.objects.create(name='XYZ Kumaş', phone='0987654321', email='xyz@fabric.com', address='Ankara'),
-            Supplier.objects.create(name='123 Dokuma', phone='5555555555', email='123@weave.com', address='İzmir'),
+            Supplier.objects.create(name=f'Supplier {i}', phone=f'123456789{i}', email=f'supplier{i}@example.com', address=f'Address {i}')
+            for i in range(1, 6)
         ]
 
-        # Müşteri verileri oluştur
+        # Create customers
         customers = [
-            Customer.objects.create(name='Ahmet Yılmaz'),
-            Customer.objects.create(name='Mehmet Demir'),
-            Customer.objects.create(name='Ayşe Kaya'),
+            Customer.objects.create(name=f'Customer {i}')
+            for i in range(1, 11)
         ]
 
-        # Ürün verileri oluştur
+        # Create products
         products = []
         for supplier in suppliers:
-            for i in range(3):  # Her tedarikçi için 3 ürün
+            for i in range(1, 4):
                 product = Product.objects.create(
-                    name=f'Ürün {i + 1} - {supplier.name}',
-                    supplier_product_name=f'Tedarikçi Ürün {i + 1}',
+                    name=f'Product {i} - {supplier.name}',
+                    supplier_product_name=f'Supplier Product {i}',
                     supplier=supplier,
                     purchase_price=Decimal(random.uniform(10, 100)),
                     sale_price=Decimal(random.uniform(20, 150)),
@@ -56,38 +53,39 @@ class Command(BaseCommand):
                 )
                 products.append(product)
 
-        # Satış verileri oluştur
-        for _ in range(10):  # 10 satış
+        # Create sales
+        for _ in range(20):
             sale = Sale.objects.create(
                 product=random.choice(products),
                 customer=random.choice(customers),
                 sale_price=Decimal(random.uniform(20, 150)),
                 meters=Decimal(random.uniform(1, 10)),
                 currency='TL',
-                date=timezone.now(),
+                date=timezone.now() - timezone.timedelta(days=random.randint(0, 365)),
                 is_paid=random.choice([True, False])
             )
 
-            # Ödeme verileri oluştur
+            # Create payments for sales
             Payment.objects.create(
                 sale=sale,
-                amount=Decimal(random.uniform(10, float(sale.sale_price) * float(sale.meters))),  # float dönüşümü
+                amount=Decimal(random.uniform(10, float(sale.sale_price) * float(sale.meters))),
                 currency='TL',
-                date=timezone.now(),
-                status=random.choice(['paid', 'pending']),
-                notes='Test ödemesi'
+                date=timezone.now() - timezone.timedelta(days=random.randint(0, 365)),
+                status=random.choice(['paid', 'pending', 'cancelled']),
+                notes='Test payment'
             )
 
-        # Sipariş verileri oluştur
-        for _ in range(5):  # 5 sipariş
+        # Create orders
+        for _ in range(10):
             Order.objects.create(
                 product=random.choice(products),
                 customer=random.choice(customers),
                 supplier=random.choice(suppliers),
                 meters=Decimal(random.uniform(1, 10)),
-                deadline_date=timezone.now().date() + timezone.timedelta(days=random.randint(1, 30)),
+                deadline_date=timezone.now().date() + timezone.timedelta(days=random.randint(-30, 30)),
                 purchase_price=Decimal(random.uniform(10, 100)),
                 sale_price=Decimal(random.uniform(20, 150)),
                 currency='TL',
-                notes='Test siparişi'
+                status=random.choice(['pending', 'confirmed', 'in_production', 'ready', 'delivered', 'delayed', 'cancelled']),
+                notes='Test order'
             )

@@ -146,6 +146,12 @@
                 margin-left: 0;
             }
         }
+
+        /* Ensure modals are responsive and fit within the viewport */
+        .modal-dialog {
+            max-width: 90%;
+            margin: auto;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -172,11 +178,7 @@
                     <i class="bi bi-truck"></i> Tedarikçiler
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{% url 'sale_list' %}" class="nav-link {% if 'sales' in request.path %}active{% endif %}">
-                    <i class="bi bi-cart"></i> Satışlar
-                </a>
-            </li>
+
             <li class="nav-item">
                 <a href="{% url 'payment_list' %}" class="nav-link {% if 'payments' in request.path %}active{% endif %}">
                     <i class="bi bi-cash"></i> Ödemeler
@@ -212,11 +214,6 @@
                 </div>
             </div>
         </div>
-
-        {% if form %}
-            <!-- Formu Crispy ile render et -->
-            {% crispy form %}
-        {% endif %}
         
         {% block content %}{% endblock %}
     </div>
@@ -248,4 +245,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

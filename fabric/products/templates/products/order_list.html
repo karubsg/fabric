@@ -6,9 +6,9 @@
 
 {% block actions %}
 <div class="btn-group">
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
+    <a href="{% url 'add_order' %}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Yeni Sipariş
-    </button>
+    </a>
 </div>
 {% endblock %}
 
@@ -16,26 +16,26 @@
 <div class="card border-0 shadow">
     <div class="card-body">
         <div class="btn-group mb-3">
-            <a href="?status=all" class="btn btn-outline-secondary">Tümü</a>
-            <a href="?status=pending" class="btn btn-outline-warning">Beklemede</a>
-            <a href="?status=confirmed" class="btn btn-outline-info">Onaylandı</a>
-            <a href="?status=in_production" class="btn btn-outline-primary">Üretimde</a>
-            <a href="?status=ready" class="btn btn-outline-success">Hazır</a>
-            <a href="?status=delivered" class="btn btn-outline-secondary">Teslim Edildi</a>
-            <a href="?status=delayed" class="btn btn-outline-danger">Gecikti</a>
-            <a href="?status=cancelled" class="btn btn-outline-dark">İptal</a>
+            <a href="?status=all" class="btn btn-outline-secondary {% if status == 'all' %}active{% endif %}">Tümü</a>
+            <a href="?status=pending" class="btn btn-outline-warning {% if status == 'pending' %}active{% endif %}">Beklemede</a>
+            <a href="?status=confirmed" class="btn btn-outline-info {% if status == 'confirmed' %}active{% endif %}">Onaylandı</a>
+            <a href="?status=in_production" class="btn btn-outline-primary {% if status == 'in_production' %}active{% endif %}">Üretimde</a>
+            <a href="?status=ready" class="btn btn-outline-success {% if status == 'ready' %}active{% endif %}">Hazır</a>
+            <a href="?status=delivered" class="btn btn-outline-secondary {% if status == 'delivered' %}active{% endif %}">Teslim Alındı</a>
+            <a href="?status=delayed" class="btn btn-outline-danger {% if status == 'delayed' %}active{% endif %}">Gecikti</a>
+            <a href="?status=cancelled" class="btn btn-outline-dark {% if status == 'cancelled' %}active{% endif %}">İptal</a>
         </div>
 
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Sipariş No</th>
+                        <th>Sipariş Tarihi</th>
+                        <th>Termin Tarihi</th>
                         <th>Müşteri</th>
                         <th>Ürün</th>
                         <th>Tedarikçi</th>
                         <th>Miktar</th>
-                        <th>Termin</th>
                         <th>Durum</th>
                         <th>İşlemler</th>
                     </tr>
@@ -43,12 +43,12 @@
                 <tbody>
                     {% for order in orders %}
                     <tr>
-                        <td>#{{ order.id }}</td>
-                        <td>{{ order.customer.name }}</td>
-                        <td>{{ order.product.name }}</td>
-                        <td>{{ order.supplier.name }}</td>
-                        <td>{{ order.meters }} metre</td>
+                        <td>{{ order.order_date|date:"d.m.Y" }}</td>
                         <td>{{ order.deadline_date|date:"d.m.Y" }}</td>
+                        <td>{{ order.customer }}</td>
+                        <td>{{ order.product }}</td>
+                        <td>{{ order.supplier }}</td>
+                        <td>{{ order.meters }} metre</td>
                         <td>
                             <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'confirmed' %}bg-info{% elif order.status == 'in_production' %}bg-primary{% elif order.status == 'ready' %}bg-success{% elif order.status == 'delivered' %}bg-secondary{% elif order.status == 'delayed' %}bg-danger{% else %}bg-dark{% endif %}">
                                 {{ order.get_status_display }}
@@ -56,45 +56,12 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ order.id }}">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="openUpdateStatusModal(this)">
                                     <i class="bi bi-arrow-repeat"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteOrderModal{{ order.id }}">
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteOrderModal{{ order.id }}" onclick="event.stopPropagation()">
                                     <i class="bi bi-trash"></i>
                                 </button>
-                            </div>
-
-                            <!-- Durum Güncelleme Modal -->
-                            <div class="modal fade" id="updateStatusModal{{ order.id }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Sipariş Durumunu Güncelle</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <form method="post" action="{% url 'update_order_status' order.id %}">
-                                            {% csrf_token %}
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Yeni Durum</label>
-                                                    <select name="status" class="form-select">
-                                                        {% for value, label in order.ORDER_STATUS %}
-                                                        <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Not (Opsiyonel)</label>
-                                                    <textarea name="note" class="form-control" rows="3"></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                                                <button type="submit" class="btn btn-primary">Güncelle</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- Silme Modal -->
@@ -136,7 +103,7 @@
 
 <!-- Yeni Sipariş Modal -->
 <div class="modal fade" id="addOrderModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Yeni Sipariş</h5>
@@ -149,7 +116,46 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Durum Güncelleme Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sipariş Durumunu Güncelle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateStatusForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Yeni Durum</label>
+                        <select name="status" class="form-select" id="statusSelect">
+                            <option value="pending">Beklemede</option>
+                            <option value="confirmed">Onaylandı</option>
+                            <option value="in_production">Üretimde</option>
+                            <option value="ready">Hazır</option>
+                            <option value="delivered">Teslim Alındı</option>
+                            <option value="delayed">Gecikti</option>
+                            <option value="cancelled">İptal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Not (Opsiyonel)</label>
+                        <textarea name="note" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Güncelle</button>
                 </div>
             </form>
         </div>
@@ -159,22 +165,78 @@
 
 {% block extra_js %}
 <script>
-    function updateSupplier(productSelect) {
-        const supplierSelect = document.getElementById('id_supplier');
-        const selectedProduct = productSelect.options[productSelect.selectedIndex];
-        const supplierId = selectedProduct.getAttribute('data-supplier-id');
+    // Bootstrap modal nesnesi
+    let updateStatusModal;
+    let currentOrderId;
+
+    function openUpdateStatusModal(button) {
+        currentOrderId = button.dataset.orderId;
+        document.getElementById('updateStatusForm').action = `/orders/${currentOrderId}/update_status/`;
+        document.getElementById('statusSelect').value = button.dataset.status;
+    }
+    
+    document.querySelector('[data-bs-target="#addOrderModal"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/orders/add/';
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal nesnesini oluştur
+        updateStatusModal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
         
-        if (supplierId) {
-            supplierSelect.value = supplierId;
-        }
+        // Form gönderimini engelle ve AJAX ile gönder
+        document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Sayfayı yenile
+                } else {
+                    alert(data.error || 'Bir hata oluştu');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Bir hata oluştu');
+            });
+        });
+    });
+
+    function openUpdateStatusModal(button) {
+        const orderId = button.getAttribute('data-order-id');
+        const currentStatus = button.getAttribute('data-status');
+        currentOrderId = orderId;
+        
+        // Form action URL'sini güncelle
+        const form = document.getElementById('updateStatusForm');
+        form.action = `/orders/${orderId}/update_status/`;
+        
+        // Mevcut durumu seç
+        const statusSelect = document.getElementById('statusSelect');
+        statusSelect.value = currentStatus;
     }
 
-    // Sayfa yüklendiğinde mevcut ürün için tedarikçiyi ayarla
+    // Modal kapanırken form resetlensin
+    document.getElementById('addOrderModal').addEventListener('hidden.bs.modal', function () {
+        this.querySelector('form').reset();
+    });
+
+    // Initialize any date pickers
     document.addEventListener('DOMContentLoaded', function() {
-        const productSelect = document.getElementById('id_product');
-        if (productSelect.value) {
-            updateSupplier(productSelect);
-        }
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            if (!input.value) {
+                input.valueAsDate = new Date();
+            }
+        });
     });
 </script>
 {% endblock %}

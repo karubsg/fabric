@@ -1,53 +1,38 @@
+from datetime import datetime, date, timedelta
+from decimal import Decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
-from django.db.models import Sum, Q, Count
-from datetime import datetime, timedelta
 from django.views.decorators.http import require_http_methods
-from .forms import ProductForm, SaleForm, PaymentForm, SupplierForm
-from .models import Product, Sale, Payment, Supplier
-from django.http import JsonResponse
-from django.http import JsonResponse
-from django.db.models import Sum
-from datetime import datetime, timedelta
-from django.shortcuts import render
-from .models import Sale, Currency
-from django.db.models import Sum, F, FloatField
-from django.utils.timezone import now
-from datetime import datetime
-from django.shortcuts import render
-from django.db.models import Sum
-from datetime import date
-from .models import Sale, Product, Payment
-from django.shortcuts import render
-from django.db.models import Sum, F, ExpressionWrapper, FloatField
-from datetime import date
-from .models import Sale, Product, Payment
-from django.shortcuts import render
-from django.db.models import Sum, F, ExpressionWrapper, FloatField
-from datetime import date
-from .models import Sale, Product, Payment
-from django.db.models import Sum
-from django.db.models import Sum, F
-from django.utils import timezone
-from datetime import timedelta
-from datetime import datetime, timedelta
-from django.db.models import F, Sum
-from django.http import JsonResponse
-from .models import Sale, Product, Payment
 from django.contrib.auth.decorators import login_required
-from .models import Order
-from .forms import OrderForm
+from django.utils.timezone import now
+from django.utils.formats import number_format
+from django.db.models import Sum, Q, Count, F, FloatField, ExpressionWrapper
+
+from .models import Product, Sale, Payment, Supplier, Customer, Currency, Order
+from .forms import ProductForm, SaleForm, PaymentForm, SupplierForm, OrderForm
+
+from django.utils import timezone
+
+def format_currency(value, currency):
+    if currency == 'USD':
+        return f"${number_format(value, decimal_pos=2)}"
+    elif currency == 'EUR':
+        return f"€{number_format(value, decimal_pos=2)}"
+    else:
+        return f"₺{number_format(value, decimal_pos=2)}"
 
 # Ana Sayfa - Geliştirilmiş Versiyon
 def home(request):
     today = date.today()
     tomorrow = today + timedelta(days=1)
     
-    # Bugünkü satışlar (sale_price * meters hesaplaması)
-    today_sales = Sale.objects.filter(
-        date__gte=today,
-        date__lt=tomorrow
+    # Bugünkü siparişler (sale_price * meters hesaplaması)
+    today_orders = Order.objects.filter(
+        order_date__gte=today,
+        order_date__lt=tomorrow
     ).annotate(
         calculated_total=ExpressionWrapper(
             F('sale_price') * F('meters'),
@@ -55,8 +40,8 @@ def home(request):
         )
     ).aggregate(total=Sum('calculated_total'))['total'] or 0
     
-    # Toplam satışlar
-    total_sales = Sale.objects.annotate(
+    # Toplam siparişler
+    total_orders = Order.objects.annotate(
         calculated_total=ExpressionWrapper(
             F('sale_price') * F('meters'),
             output_field=FloatField()
@@ -72,11 +57,19 @@ def home(request):
         date__lt=tomorrow
     ).aggregate(total=Sum('amount'))['total'] or 0
     
+    # Son 5 sipariş
+    recent_orders = Order.objects.select_related('product', 'customer').order_by('-order_date')[:5]
+
+    # Son 5 ödeme
+    recent_payments = Payment.objects.select_related('sale').order_by('-date')[:5]
+
     context = {
-        'today_sales': round(float(today_sales), 2),
-        'total_sales': round(float(total_sales), 2),
+        'today_orders': format_currency(today_orders, '₺'),
+        'total_orders': format_currency(total_orders, '₺'),
         'total_products': total_products,
-        'today_payments': round(float(today_payments), 2),
+        'today_payments': format_currency(today_payments, '₺'),
+        'recent_orders': recent_orders,
+        'recent_payments': recent_payments,
     }
     return render(request, 'products/home.html', context)
 
@@ -87,14 +80,26 @@ def product_detail(request, pk):
     sales = product.sales.all()
     purchases = product.purchases.all()
     
+    # Sale modeli için total_amount alanı var, ancak Order modeli için total_purchase_amount ve total_sale_amount metotları kullanılmalı
+    # Satışlar için toplam gelir hesaplaması
+    total_revenue = 0
+    for sale in sales:
+        # total_amount bir model alanı olduğu için doğrudan erişebiliriz
+        total_revenue += sale.total_amount
+    
+    # Siparişler için toplam maliyet hesaplaması
+    total_cost = 0
+    for purchase in purchases:
+        total_cost += purchase.total_purchase_amount()
+    
     context = {
         'product': product,
         'sales': sales,
         'purchases': purchases,
         'total_sold': sales.aggregate(total=Sum('meters'))['total'] or 0,
         'total_purchased': purchases.aggregate(total=Sum('meters'))['total'] or 0,
-        'total_revenue': sales.aggregate(total=Sum('total_amount'))['total'] or 0,
-        'total_cost': purchases.aggregate(total=Sum('total_amount'))['total'] or 0,
+        'total_revenue': total_revenue,
+        'total_cost': total_cost,
     }
     return render(request, 'products/product_detail.html', context)
 
@@ -106,13 +111,7 @@ def delete_product(request, pk):
     messages.success(request, f'"{product.name}" ürünü silindi!')
     return redirect('product_list')
 
-# Satış İptal View'ı Eklendi
-@require_http_methods(["POST"])
-def cancel_sale(request, sale_id):
-    sale = get_object_or_404(Sale, id=sale_id)
-    sale.delete()
-    messages.warning(request, f'Satış #{sale_id} iptal edildi!')
-    return redirect('sale_list')
+# Satış işlemleri sipariş işlemleri ile birleştirildi
 
 # Ürün İşlemleri
 def add_product(request):
@@ -130,7 +129,7 @@ def add_product(request):
 def product_list(request):
     query = request.GET.get('q')
     products = Product.objects.all()
-    
+
     if query:
         products = products.filter(
             Q(name__icontains=query) | 
@@ -163,45 +162,7 @@ def product_list(request):
     })
 
 # Satış İşlemleri
-def add_sale(request):
-    if request.method == 'POST':
-        form = SaleForm(request.POST)
-        if form.is_valid():
-            sale = form.save()
-            messages.success(request, f'Satış #{sale.id} kaydedildi (₺{sale.total_price:,.2f})')
-            return redirect('sale_list')
-    else:
-        form = SaleForm()
-    
-    return render(request, 'products/add_sale.html', {'form': form})
-
-def sale_list(request):
-    date_from = request.GET.get('from')
-    date_to = request.GET.get('to')
-    
-    sales = Sale.objects.all()
-    
-    if date_from and date_to:
-        sales = sales.filter(date__range=[date_from, date_to])
-    
-    # total_price yerine total_amount() metodunu kullanıyoruz
-    total_sales = sales.aggregate(total=Sum(F('sale_price') * F('meters')))['total'] or 0
-    paginator = Paginator(sales.order_by('-date'), 15)
-    page = request.GET.get('page')
-    
-    try:
-        sales = paginator.page(page)
-    except PageNotAnInteger:
-        sales = paginator.page(1)
-    except EmptyPage:
-        sales = paginator.page(paginator.num_pages)
-        
-    return render(request, 'products/sale_list.html', {
-        'sales': sales,
-        'total_sales': total_sales,
-        'date_from': date_from,
-        'date_to': date_to
-    })
+# Satış işlemleri sipariş işlemleri ile birleştirildi
 
 
 # Ödeme İşlemleri
@@ -218,10 +179,23 @@ def add_payment(request):
     return render(request, 'products/add_payment.html', {'form': form})
 
 def payment_list(request):
+    # Tarih filtrelerini al
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
     payments = Payment.objects.all()
+    
+    # Tarih filtrelemesi
+    if start_date:
+        payments = payments.filter(date__gte=start_date)
+    if end_date:
+        payments = payments.filter(date__lte=end_date)
+    
+    # Toplam hesaplama
     total = payments.aggregate(total=Sum('amount'))['total'] or 0
     
-    paginator = Paginator(payments.order_by('-date'), 15)  # 'payment_date' yerine 'date' kullanıldı
+    # Sayfalama
+    paginator = Paginator(payments.order_by('-date'), 15)
     page = request.GET.get('page')
     
     try:
@@ -231,10 +205,14 @@ def payment_list(request):
     except EmptyPage:
         payments = paginator.page(paginator.num_pages)
         
-    return render(request, 'products/payment_list.html', {
+    context = {
         'payments': payments,
-        'total_payments': total
-    })
+        'total_payments': total,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    
+    return render(request, 'products/payment_list.html', context)
 
 # Raporlar
 def sales_report(request):
@@ -254,25 +232,27 @@ def sales_report(request):
 
     # Müşteriye göre filtreleme
     if selected_customer:
-        sales = sales.filter(customer__name=selected_customer)  # customer_name yerine customer__name
+        sales = sales.filter(customer__name=selected_customer)
 
-    # Döviz filtresi
+    # Para birimi filtresi
     if selected_currency:
         sales = sales.filter(currency=selected_currency)
 
-    # Bugünkü döviz kurlarını al (günlük en son kayıtları alıyoruz)
-    latest_currency = Currency.objects.order_by('-date').first()
-    usd_rate = latest_currency.rate if latest_currency and latest_currency.name == 'USD' else 0
-    eur_rate = latest_currency.rate if latest_currency and latest_currency.name == 'EUR' else 0
+    # Bugünkü döviz kurlarını al
+    latest_usd = Currency.objects.filter(name='USD').order_by('-date').first()
+    latest_eur = Currency.objects.filter(name='EUR').order_by('-date').first()
+    
+    usd_rate = latest_usd.rate if latest_usd else Decimal('31.00')  # Varsayılan değerler
+    eur_rate = latest_eur.rate if latest_eur else Decimal('33.00')  # Varsayılan değerler
 
     # Her satışın toplamını ve TL karşılığını hesapla
     filtered_sales = []
-    total_usd = total_eur = total_try = 0
-    total_usd_tl = total_eur_tl = 0
+    total_usd = total_eur = total_try = Decimal('0')
+    total_usd_tl = total_eur_tl = Decimal('0')
 
     for sale in sales:
-        total_price = sale.sale_price * sale.meters  # sale_price ve meters kullanılıyor
-        total_price_tl = 0
+        total_price = sale.sale_price * sale.meters
+        total_price_tl = Decimal('0')
 
         if sale.currency == 'USD':
             total_usd += total_price
@@ -288,11 +268,11 @@ def sales_report(request):
 
         filtered_sales.append({
             'date': sale.date,
-            'customer_name': sale.customer.name,  # customer_name yerine customer.name kullanıyoruz
-            'product': sale.product.name,  # product adını ekliyoruz
-            'quantity': sale.meters,  # quantity yerine meters
-            'unit_price': sale.sale_price,  # unit_price yerine sale_price
-            'currency': sale.currency,
+            'customer_name': sale.customer.name,
+            'product': sale.product.name,
+            'quantity': sale.meters,
+            'unit_price': sale.sale_price,
+            'currency': sale.get_currency_display(),  # Para birimi görünen adını kullan
             'total_price': total_price,
             'total_price_tl': total_price_tl,
         })
@@ -300,7 +280,7 @@ def sales_report(request):
     grand_total_tl = total_usd_tl + total_eur_tl + total_try
 
     # Mevcut müşterileri dropdown'a göndermek için
-    customers = Sale.objects.values_list('customer__name', flat=True).distinct()
+    customers = Customer.objects.values_list('name', flat=True).distinct()
 
     context = {
         'filtered_sales': filtered_sales,
@@ -390,7 +370,8 @@ def order_list(request):
     context = {
         'orders': orders,
         'form': form,
-        'status': status
+        'status': status,
+        'order': {'ORDER_STATUS': Order.ORDER_STATUS}  # ORDER_STATUS seçeneklerini template'e gönder
     }
     return render(request, 'products/order_list.html', context)
 
@@ -408,19 +389,28 @@ def add_order(request):
 
 @login_required
 def update_order_status(request, pk):
-    order = get_object_or_404(Order, pk=pk)
     if request.method == 'POST':
-        status = request.POST.get('status')
+        order = get_object_or_404(Order, pk=pk)
+        new_status = request.POST.get('status')
         note = request.POST.get('note', '')
         
-        if status in dict(Order.ORDER_STATUS):
-            order.status = status
-            if note:
-                order.notes = f"{order.notes}\n{note}" if order.notes else note
+        if new_status in dict(Order.ORDER_STATUS):
+            order.status = new_status
+            order.notes = note if note else order.notes
+            order.last_status_update = timezone.now()
             order.save()
-            messages.success(request, 'Sipariş durumu güncellendi.')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+            else:
+                messages.success(request, 'Sipariş durumu güncellendi.')
+                
         else:
-            messages.error(request, 'Geçersiz sipariş durumu.')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Geçersiz durum.'})
+            else:
+                messages.error(request, 'Geçersiz durum.')
+                
     return redirect('order_list')
 
 @login_required

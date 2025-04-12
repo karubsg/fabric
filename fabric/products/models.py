@@ -6,9 +6,9 @@ from django.utils import timezone
 
 # Para birimleri için seçenekler
 CURRENCY_CHOICES = [
-    ('TL', 'Türk Lirası'),
-    ('USD', 'Amerikan Doları'),
-    ('EUR', 'Euro'),
+    ('₺', '₺ (TL)'),
+    ('$', '$ (USD)'),
+    ('€', '€ (EUR)'),
 ]
 
 from django.db import models
@@ -72,7 +72,7 @@ class Customer(models.Model):
         return self.name
 
 class Sale(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Ürün")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Ürün", related_name="sales")
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Müşteri")
     sale_price = models.DecimalField("Satış Fiyatı (Metre)", max_digits=10, decimal_places=2)
     currency = models.CharField("Para Birimi", max_length=3, choices=CURRENCY_CHOICES)
@@ -159,7 +159,7 @@ class Order(models.Model):
         ('cancelled', 'İptal Edildi'),
     ]
 
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Ürün")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Ürün", related_name="purchases")
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Müşteri")
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, verbose_name="Tedarikçi")
     order_date = models.DateField("Sipariş Tarihi", auto_now_add=True)

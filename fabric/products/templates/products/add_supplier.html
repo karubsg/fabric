@@ -15,15 +15,7 @@
     <div class="card-body p-4">
         <form method="post" novalidate class="needs-validation">
             {% csrf_token %}
-            
-            <!-- Tedarikçi Bilgileri -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    {{ form.name|as_crispy_field }}
-                </div>
-            </div>
-            
-            <!-- Form Butonları -->
+            {% crispy form %}
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                 <a href="{% url 'supplier_list' %}" class="btn btn-outline-secondary me-md-2">
                     <i class="bi bi-x-circle"></i> İptal
@@ -67,4 +59,4 @@
     }
 </style>
 {% endblock %}
-{% endblock %} 
+{% endblock %}
