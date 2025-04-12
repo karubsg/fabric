@@ -1,0 +1,180 @@
+{% extends 'products/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Siparişler - FabricCRM{% endblock %}
+{% block header %}Siparişler{% endblock %}
+
+{% block actions %}
+<div class="btn-group">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
+        <i class="bi bi-plus-circle"></i> Yeni Sipariş
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow">
+    <div class="card-body">
+        <div class="btn-group mb-3">
+            <a href="?status=all" class="btn btn-outline-secondary">Tümü</a>
+            <a href="?status=pending" class="btn btn-outline-warning">Beklemede</a>
+            <a href="?status=confirmed" class="btn btn-outline-info">Onaylandı</a>
+            <a href="?status=in_production" class="btn btn-outline-primary">Üretimde</a>
+            <a href="?status=ready" class="btn btn-outline-success">Hazır</a>
+            <a href="?status=delivered" class="btn btn-outline-secondary">Teslim Edildi</a>
+            <a href="?status=delayed" class="btn btn-outline-danger">Gecikti</a>
+            <a href="?status=cancelled" class="btn btn-outline-dark">İptal</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Sipariş No</th>
+                        <th>Müşteri</th>
+                        <th>Ürün</th>
+                        <th>Tedarikçi</th>
+                        <th>Miktar</th>
+                        <th>Termin</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.customer.name }}</td>
+                        <td>{{ order.product.name }}</td>
+                        <td>{{ order.supplier.name }}</td>
+                        <td>{{ order.meters }} metre</td>
+                        <td>{{ order.deadline_date|date:"d.m.Y" }}</td>
+                        <td>
+                            <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'confirmed' %}bg-info{% elif order.status == 'in_production' %}bg-primary{% elif order.status == 'ready' %}bg-success{% elif order.status == 'delivered' %}bg-secondary{% elif order.status == 'delayed' %}bg-danger{% else %}bg-dark{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ order.id }}">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteOrderModal{{ order.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Durum Güncelleme Modal -->
+                            <div class="modal fade" id="updateStatusModal{{ order.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Sipariş Durumunu Güncelle</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'update_order_status' order.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Yeni Durum</label>
+                                                    <select name="status" class="form-select">
+                                                        {% for value, label in order.ORDER_STATUS %}
+                                                        <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Not (Opsiyonel)</label>
+                                                    <textarea name="note" class="form-control" rows="3"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-primary">Güncelle</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Silme Modal -->
+                            <div class="modal fade" id="deleteOrderModal{{ order.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Siparişi Sil</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Bu siparişi silmek istediğinize emin misiniz?</p>
+                                            <p class="text-danger">Bu işlem geri alınamaz!</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                            <form method="post" action="{% url 'delete_order' order.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Sil</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">
+                            <i class="bi bi-exclamation-circle"></i> Kayıtlı sipariş bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Yeni Sipariş Modal -->
+<div class="modal fade" id="addOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Sipariş</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'add_order' %}" novalidate class="needs-validation">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% crispy form %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateSupplier(productSelect) {
+        const supplierSelect = document.getElementById('id_supplier');
+        const selectedProduct = productSelect.options[productSelect.selectedIndex];
+        const supplierId = selectedProduct.getAttribute('data-supplier-id');
+        
+        if (supplierId) {
+            supplierSelect.value = supplierId;
+        }
+    }
+
+    // Sayfa yüklendiğinde mevcut ürün için tedarikçiyi ayarla
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('id_product');
+        if (productSelect.value) {
+            updateSupplier(productSelect);
+        }
+    });
+</script>
+{% endblock %}

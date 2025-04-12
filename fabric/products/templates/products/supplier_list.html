@@ -1,0 +1,78 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Tedarikçiler - FabricCRM{% endblock %}
+{% block header %}Tedarikçiler{% endblock %}
+
+{% block actions %}
+    <a href="{% url 'add_supplier' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Yeni Tedarikçi
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Tedarikçi Adı</th>
+                        <th>Ürün Sayısı</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ supplier.name }}</td>
+                        <td>{{ supplier.product_set.count }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="#" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ supplier.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Silme Modalı -->
+                            <div class="modal fade" id="deleteModal{{ supplier.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Tedarikçiyi Sil</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p><strong>{{ supplier.name }}</strong> tedarikçisini silmek istediğinize emin misiniz?</p>
+                                            <p class="text-danger">Bu işlem geri alınamaz!</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                            <form method="post" action="{% url 'delete_supplier' supplier.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Sil</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            <i class="bi bi-exclamation-circle"></i> Kayıtlı tedarikçi bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

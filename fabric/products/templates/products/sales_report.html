@@ -1,0 +1,81 @@
+{% extends 'products/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Satış Raporu - FabricCRM{% endblock %}
+{% block header %}Satış Raporu{% endblock %}
+
+{% block actions %}
+<form class="d-flex align-items-center flex-wrap gap-2" method="get">
+    <input type="date" name="from" value="{{ date_from }}" class="form-control" placeholder="Başlangıç">
+    <input type="date" name="to" value="{{ date_to }}" class="form-control" placeholder="Bitiş">
+    <select name="customer" class="form-select">
+        <option value="">Tüm Müşteriler</option>
+        {% for customer in customers %}
+            <option value="{{ customer }}" {% if selected_customer == customer %}selected{% endif %}>
+                {{ customer }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="currency" class="form-select">
+        <option value="">Tüm Para Birimleri</option>
+        <option value="TRY" {% if selected_currency == 'TRY' %}selected{% endif %}>₺ TL</option>
+        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>$ USD</option>
+        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>€ EUR</option>
+    </select>
+    <button type="submit" class="btn btn-outline-primary">
+        <i class="bi bi-search"></i> Filtrele
+    </button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% if filtered_sales %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Müşteri</th>
+                        <th>Ürün</th>
+                        <th>Miktar</th>
+                        <th>Birim Fiyat</th>
+                        <th>Para Birimi</th>
+                        <th>Toplam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in filtered_sales %}
+                    <tr>
+                        <td>{{ sale.date|date:"d.m.Y" }}</td>
+                        <td>{{ sale.customer_name }}</td>
+                        <td>{{ sale.product }}</td>
+                        <td>{{ sale.quantity }} metre</td>
+                        <td>{{ sale.unit_price|floatformat:2 }}</td>
+                        <td>{{ sale.currency }}</td>
+                        <td>{{ sale.total_price|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <i class="bi bi-exclamation-circle"></i> Seçilen kriterlere uygun satış bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-secondary">
+                        <td colspan="6" class="text-end fw-bold">Toplam (TL):</td>
+                        <td class="fw-bold">{{ grand_total_tl|floatformat:2 }} TL</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+            <div class="alert alert-warning">Seçilen kriterlere göre satış bulunamadı.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

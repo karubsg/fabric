@@ -1,0 +1,203 @@
+{% extends 'products/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Sipariş Ekle - FabricCRM{% endblock %}
+{% block header %}Yeni Sipariş{% endblock %}
+
+{% block actions %}
+    <a href="{% url 'order_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-list-ul"></i> Tüm Siparişler
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body p-4">
+        <form method="post" novalidate class="needs-validation">
+            {% csrf_token %}
+            
+            <!-- Ürün ve Müşteri Bilgileri -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    {{ form.product|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.customer|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Tedarikçi -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    {{ form.supplier|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Termin ve Miktar -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    {{ form.deadline_date|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.meters|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Fiyat Bilgileri -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    {{ form.purchase_price|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.sale_price|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.currency|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Hesaplanan Tutarlar -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Toplam Alış Tutarı</label>
+                        <input type="text" class="form-control" id="total_purchase" readonly>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Toplam Satış Tutarı</label>
+                        <input type="text" class="form-control" id="total_sale" readonly>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Tahmini Kar</label>
+                        <input type="text" class="form-control" id="expected_profit" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notlar -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    {{ form.notes|as_crispy_field }}
+                </div>
+            </div>
+            
+            <!-- Form Butonları -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary me-md-2">
+                    <i class="bi bi-x-circle"></i> İptal
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const purchasePriceInput = document.getElementById('id_purchase_price');
+        const salePriceInput = document.getElementById('id_sale_price');
+        const metersInput = document.getElementById('id_meters');
+        const currencySelect = document.getElementById('id_currency');
+        const totalPurchaseInput = document.getElementById('total_purchase');
+        const totalSaleInput = document.getElementById('total_sale');
+        const expectedProfitInput = document.getElementById('expected_profit');
+        const productSelect = document.getElementById('id_product');
+        const supplierField = document.getElementById('id_supplier');
+
+        function calculateTotals() {
+            const purchasePrice = parseFloat(purchasePriceInput.value) || 0;
+            const salePrice = parseFloat(salePriceInput.value) || 0;
+            const meters = parseFloat(metersInput.value) || 0;
+            const currency = currencySelect.options[currencySelect.selectedIndex].text;
+            
+            const totalPurchase = purchasePrice * meters;
+            const totalSale = salePrice * meters;
+            const profit = totalSale - totalPurchase;
+
+            totalPurchaseInput.value = totalPurchase.toFixed(2) + ' ' + currency;
+            totalSaleInput.value = totalSale.toFixed(2) + ' ' + currency;
+            expectedProfitInput.value = profit.toFixed(2) + ' ' + currency;
+
+            // Kar marjı negatifse kırmızı, pozitifse yeşil yap
+            expectedProfitInput.style.color = profit > 0 ? '#28a745' : '#dc3545';
+        }
+
+        purchasePriceInput.addEventListener('input', calculateTotals);
+        salePriceInput.addEventListener('input', calculateTotals);
+        metersInput.addEventListener('input', calculateTotals);
+        currencySelect.addEventListener('change', calculateTotals);
+
+        // Ürün seçildiğinde fiyatları otomatik doldur
+        productSelect.addEventListener('change', function() {
+            const productId = this.value;
+            if (productId) {
+                fetch(`/api/product/${productId}/details/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        purchasePriceInput.value = data.purchase_price;
+                        salePriceInput.value = data.sale_price;
+                        currencySelect.value = data.currency;
+                        calculateTotals();
+                    });
+            }
+        });
+
+        // Ürün seçildiğinde tedarikçinin otomatik gelmesi
+        productSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const supplierName = selectedOption.getAttribute('data-supplier');
+            
+            // Tedarikçi seçeneğini bul ve seç
+            for(let i = 0; i < supplierField.options.length; i++) {
+                if(supplierField.options[i].text === supplierName) {
+                    supplierField.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Tedarikçi alanını readonly yap
+            supplierField.disabled = true;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 
