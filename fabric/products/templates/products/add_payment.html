@@ -1,5 +1,6 @@
 {% extends 'products/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %}Ödeme Ekle - FabricCRM{% endblock %}
 {% block header %}Yeni Ödeme Kaydı{% endblock %}
@@ -29,47 +30,6 @@
 </div>
 
 {% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Form elementi
-        const form = document.querySelector('form');
-        const dateInput = document.getElementById('id_date');
-
-        // Sayfa yüklendiğinde tarihi bugüne ayarla
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.value = today;
-        }
-
-        // Form gönderildiğinde
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Form verilerini al
-            const formData = new FormData(form);
-            
-            // AJAX ile form verilerini gönder
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    // Başarılı ise ödeme listesine yönlendir
-                    window.location.href = '{% url "payment_list" %}';
-                } else {
-                    throw new Error('Ödeme kaydedilemedi');
-                }
-            })
-            .catch(error => {
-                console.error('Hata:', error);
-                alert('Ödeme kaydedilirken bir hata oluştu!');
-            });
-        });
-    });
-</script>
+<script src="{% static 'products/js/payment.js' %}"></script>
 {% endblock %}
 {% endblock %}

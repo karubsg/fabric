@@ -39,6 +39,7 @@ class Product(models.Model):
     name = models.CharField(max_length=100, verbose_name='Firma Ürün Adı')
     supplier_product_name = models.CharField(max_length=100, verbose_name='Tedarikçi Ürün Adı')
     code = models.CharField(max_length=20, verbose_name='Ürün Kodu')
+    color = models.CharField(max_length=50, verbose_name='Renk', blank=True, null=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, verbose_name='Tedarikçi')
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Alış Fiyatı')
     sale_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Satış Fiyatı')

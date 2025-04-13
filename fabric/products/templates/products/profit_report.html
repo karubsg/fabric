@@ -1,0 +1,190 @@
+{% extends 'products/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Kâr Raporu - FabricCRM{% endblock %}
+{% block header %}Kâr Analiz Raporu{% endblock %}
+
+{% block actions %}
+<form class="d-flex align-items-center flex-wrap gap-2" method="get">
+    <input type="date" name="from" value="{{ date_from }}" class="form-control" placeholder="Başlangıç">
+    <input type="date" name="to" value="{{ date_to }}" class="form-control" placeholder="Bitiş">
+    <select name="customer" class="form-select">
+        <option value="">Tüm Müşteriler</option>
+        {% for customer in customers %}
+            <option value="{{ customer }}" {% if selected_customer == customer %}selected{% endif %}>
+                {{ customer }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="supplier" class="form-select">
+        <option value="">Tüm Tedarikçiler</option>
+        {% for supplier in suppliers %}
+            <option value="{{ supplier }}" {% if selected_supplier == supplier %}selected{% endif %}>
+                {{ supplier }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="product" class="form-select">
+        <option value="">Tüm Ürünler</option>
+        {% for product in products %}
+            <option value="{{ product }}" {% if selected_product == product %}selected{% endif %}>
+                {{ product }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="currency" class="form-select">
+        <option value="">Tüm Para Birimleri</option>
+        <option value="TL" {% if selected_currency == 'TL' %}selected{% endif %}>₺ (TL)</option>
+        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>$ (USD)</option>
+        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>€ (EUR)</option>
+    </select>
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-search"></i> Filtrele
+    </button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0"><i class="bi bi-graph-up-arrow text-success me-2"></i>Kâr Analizi</h5>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Yazdır
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if profit_data %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Müşteri</th>
+                        <th>Ürün</th>
+                        <th>Satış Fiyatı</th>
+                        <th>Alış Fiyatı</th>
+                        <th>Kâr (Birim)</th>
+                        <th>Miktar</th>
+                        <th>Toplam Kâr</th>
+                        <th>Para Birimi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in profit_data %}
+                    <tr>
+                        <td>{{ item.date|date:"d.m.Y" }}</td>
+                        <td>{{ item.customer }}</td>
+                        <td>{{ item.product }}</td>
+                        <td class="text-success">{{ item.sale_price|floatformat:2 }}</td>
+                        <td class="text-danger">{{ item.purchase_price|floatformat:2 }}</td>
+                        <td class="fw-bold {% if item.profit_per_meter > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ item.profit_per_meter|floatformat:2 }}
+                        </td>
+                        <td>{{ item.meters }} metre</td>
+                        <td class="fw-bold {% if item.total_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ item.total_profit|floatformat:2 }}
+                        </td>
+                        <td>{{ item.currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-secondary">
+                        <td colspan="7" class="text-end fw-bold">Toplam Kâr:</td>
+                        <td class="fw-bold {% if total_profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ total_profit|floatformat:2 }}
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i> Seçilen kriterlere göre kâr verisi bulunamadı.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Kâr Grafiği -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Kâr Grafiği</h5>
+    </div>
+    <div class="card-body">
+        {% if profit_data %}
+        <canvas id="profitChart" height="300"></canvas>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i> Grafik için yeterli veri bulunmuyor.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if profit_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('profitChart').getContext('2d');
+        
+        // Verileri hazırla
+        const labels = [];
+        const profitData = [];
+        const salesData = [];
+        const purchaseData = [];
+        
+        {% for item in profit_data %}
+            labels.push('{{ item.date|date:"d.m.Y" }} - {{ item.product }}');
+            profitData.push({{ item.total_profit }});
+            salesData.push({{ item.sale_price }} * {{ item.meters }});
+            purchaseData.push({{ item.purchase_price }} * {{ item.meters }});
+        {% endfor %}
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Toplam Kâr',
+                        data: profitData,
+                        backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Satış Tutarı',
+                        data: salesData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Alış Tutarı',
+                        data: purchaseData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

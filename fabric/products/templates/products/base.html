@@ -16,6 +16,9 @@
     <!-- Datepicker CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Yerel CSS -->
     <link rel="stylesheet" href="{% static 'products/css/style.css' %}">
     
@@ -44,6 +47,7 @@
             position: fixed;
             width: 250px;
             z-index: 1000;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar .nav-link {
@@ -52,6 +56,15 @@
             border-radius: 8px;
             margin-bottom: 0.5rem;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
         }
 
         .sidebar .nav-link:hover {
@@ -66,6 +79,34 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
+        .sidebar-header {
+            padding: 1rem 0;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .nav-section-title {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
         .main-content {
             margin-left: 250px;
             padding: 2rem;
@@ -76,10 +117,17 @@
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
+            overflow: hidden;
         }
 
         .card:hover {
             transform: translateY(-5px);
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background-color: #fff;
+            padding: 1rem 1.25rem;
         }
 
         .btn {
@@ -159,42 +207,89 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h3>FabricCRM</h3>
+            <h3><i class="bi bi-layers"></i> FabricCRM</h3>
         </div>
-
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a href="{% url 'home' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
-                    <i class="bi bi-house"></i> Ana Sayfa
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'product_list' %}" class="nav-link {% if 'products' in request.path %}active{% endif %}">
-                    <i class="bi bi-box"></i> Ürünler
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'supplier_list' %}" class="nav-link {% if 'suppliers' in request.path %}active{% endif %}">
-                    <i class="bi bi-truck"></i> Tedarikçiler
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="{% url 'payment_list' %}" class="nav-link {% if 'payments' in request.path %}active{% endif %}">
-                    <i class="bi bi-cash"></i> Ödemeler
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'sales_report' %}" class="nav-link {% if 'reports' in request.path %}active{% endif %}">
-                    <i class="bi bi-graph-up"></i> Raporlar
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'order_list' %}" class="nav-link {% if 'orders' in request.path %}active{% endif %}">
-                    <i class="bi bi-list-check"></i> Siparişler
-                </a>
-            </li>
-        </ul>
+        
+        <!-- Ana Menü -->
+        <div class="nav-section">
+            <div class="nav-section-title">Ana Menü</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">
+                        <i class="bi bi-house-door-fill"></i> Ana Sayfa
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/products/' in request.path and not '/add/' in request.path %}active{% endif %}" href="{% url 'product_list' %}">
+                        <i class="bi bi-box-seam-fill"></i> Ürünler
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/suppliers/' in request.path %}active{% endif %}" href="{% url 'supplier_list' %}">
+                        <i class="bi bi-truck"></i> Tedarikçiler
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/orders/' in request.path %}active{% endif %}" href="{% url 'order_list' %}">
+                        <i class="bi bi-clipboard-check-fill"></i> Siparişler
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/payments/' in request.path %}active{% endif %}" href="{% url 'payment_list' %}">
+                        <i class="bi bi-cash-coin"></i> Ödemeler
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Raporlar -->
+        <div class="nav-section">
+            <div class="nav-section-title">Raporlar</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if '/reports/sales/' in request.path %}active{% endif %}" href="{% url 'sales_report' %}">
+                        <i class="bi bi-graph-up-arrow"></i> Satış Raporu
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/reports/purchases/' in request.path %}active{% endif %}" href="{% url 'purchase_report' %}">
+                        <i class="bi bi-cart-check"></i> Alış Raporu
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/reports/profit/' in request.path %}active{% endif %}" href="{% url 'profit_report' %}">
+                        <i class="bi bi-currency-exchange"></i> Kâr Raporu
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Hızlı İşlemler -->
+        <div class="nav-section">
+            <div class="nav-section-title">Hızlı İşlemler</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if '/products/add/' in request.path %}active{% endif %}" href="{% url 'add_product' %}">
+                        <i class="bi bi-plus-circle"></i> Yeni Ürün
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/orders/add/' in request.path %}active{% endif %}" href="{% url 'add_order' %}">
+                        <i class="bi bi-bag-plus"></i> Yeni Sipariş
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/payments/add/' in request.path %}active{% endif %}" href="{% url 'add_payment' %}">
+                        <i class="bi bi-credit-card"></i> Yeni Ödeme
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/suppliers/add/' in request.path %}active{% endif %}" href="{% url 'add_supplier' %}">
+                        <i class="bi bi-building-add"></i> Yeni Tedarikçi
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Main Content -->

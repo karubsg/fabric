@@ -15,6 +15,8 @@ urlpatterns = [
     path('payments/add/', views.add_payment, name='add_payment'),
     # Raporlar
     path('reports/sales/', views.sales_report, name='sales_report'),
+    path('reports/purchases/', views.purchase_report, name='purchase_report'),
+    path('reports/profit/', views.profit_report, name='profit_report'),
     # Tedarikçi URL'leri
     path('suppliers/', views.supplier_list, name='supplier_list'),
     path('suppliers/add/', views.add_supplier, name='add_supplier'),

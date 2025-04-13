@@ -16,6 +16,89 @@ from .forms import ProductForm, SaleForm, PaymentForm, SupplierForm, OrderForm
 
 from django.utils import timezone
 
+def sales_report(request):
+    # Tarih filtresi
+    date_from = request.GET.get('from')
+    date_to = request.GET.get('to')
+    selected_customer = request.GET.get('customer')
+    selected_currency = request.GET.get('currency')
+
+    sales = Sale.objects.all()
+
+    # Tarih aralığına göre filtreleme
+    if date_from:
+        sales = sales.filter(date__gte=date_from)
+    if date_to:
+        sales = sales.filter(date__lte=date_to)
+
+    # Müşteriye göre filtreleme
+    if selected_customer:
+        sales = sales.filter(customer__name=selected_customer)
+
+    # Para birimi filtresi
+    if selected_currency:
+        sales = sales.filter(currency=selected_currency)
+
+    # Bugünkü döviz kurlarını al
+    latest_usd = Currency.objects.filter(name='USD').order_by('-date').first()
+    latest_eur = Currency.objects.filter(name='EUR').order_by('-date').first()
+    
+    usd_rate = latest_usd.rate if latest_usd else Decimal('31.00')  # Varsayılan değerler
+    eur_rate = latest_eur.rate if latest_eur else Decimal('33.00')  # Varsayılan değerler
+
+    # Her satışın toplamını ve TL karşılığını hesapla
+    filtered_sales = []
+    total_usd = total_eur = total_try = Decimal('0')
+    total_usd_tl = total_eur_tl = Decimal('0')
+
+    for sale in sales:
+        total_price = sale.sale_price * sale.meters
+        total_price_tl = Decimal('0')
+
+        if sale.currency == 'USD':
+            total_usd += total_price
+            total_price_tl = total_price * usd_rate
+            total_usd_tl += total_price_tl
+        elif sale.currency == 'EUR':
+            total_eur += total_price
+            total_price_tl = total_price * eur_rate
+            total_eur_tl += total_price_tl
+        else:  # TL
+            total_try += total_price
+            total_price_tl = total_price
+
+        filtered_sales.append({
+            'date': sale.date,
+            'customer_name': sale.customer.name,
+            'product': sale.product.name,
+            'quantity': sale.meters,
+            'unit_price': sale.sale_price,
+            'currency': sale.get_currency_display(),
+            'total_price': total_price,
+            'total_price_tl': total_price_tl,
+        })
+
+    grand_total_tl = total_usd_tl + total_eur_tl + total_try
+
+    # Mevcut müşterileri dropdown'a göndermek için
+    customers = Customer.objects.values_list('name', flat=True).distinct()
+
+    context = {
+        'filtered_sales': filtered_sales,
+        'total_usd': total_usd,
+        'total_eur': total_eur,
+        'total_try': total_try,
+        'total_usd_tl': total_usd_tl,
+        'total_eur_tl': total_eur_tl,
+        'grand_total_tl': grand_total_tl,
+        'date_from': date_from,
+        'date_to': date_to,
+        'selected_customer': selected_customer,
+        'selected_currency': selected_currency,
+        'customers': customers,
+    }
+    return render(request, 'products/sales_report.html', context)
+
 def format_currency(value, currency):
     if currency == 'USD':
         return f"${number_format(value, decimal_pos=2)}"
@@ -171,8 +254,24 @@ def add_payment(request):
         form = PaymentForm(request.POST)
         if form.is_valid():
             payment = form.save()
-            messages.success(request, f'Ödeme #{payment.id} (₺{payment.amount:,.2f}) alındı')
+            # Satışın kalan bakiyesini güncelle
+            sale = payment.sale
+            sale.update_payment_status()
+            
+            # AJAX isteği ise JSON yanıt döndür
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Ödeme #{payment.id} ({payment.currency}{payment.amount:,.2f}) alındı',
+                    'redirect': '/payments/'
+                })
+            
+            messages.success(request, f'Ödeme #{payment.id} ({payment.currency}{payment.amount:,.2f}) alındı')
             return redirect('payment_list')
+        else:
+            # Form geçerli değilse ve AJAX isteği ise hata mesajı döndür
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Form geçerli değil'}, status=400)
     else:
         form = PaymentForm()
     
@@ -215,28 +314,38 @@ def payment_list(request):
     return render(request, 'products/payment_list.html', context)
 
 # Raporlar
-def sales_report(request):
+def purchase_report(request):
     # Tarih filtresi
     date_from = request.GET.get('from')
     date_to = request.GET.get('to')
-    selected_customer = request.GET.get('customer')
+    selected_supplier = request.GET.get('supplier')
     selected_currency = request.GET.get('currency')
+    selected_product = request.GET.get('product')
+    selected_color = request.GET.get('color')
 
-    sales = Sale.objects.all()
+    orders = Order.objects.all()
 
     # Tarih aralığına göre filtreleme
     if date_from:
-        sales = sales.filter(date__gte=date_from)
+        orders = orders.filter(order_date__gte=date_from)
     if date_to:
-        sales = sales.filter(date__lte=date_to)
+        orders = orders.filter(order_date__lte=date_to)
 
-    # Müşteriye göre filtreleme
-    if selected_customer:
-        sales = sales.filter(customer__name=selected_customer)
+    # Tedarikçiye göre filtreleme
+    if selected_supplier:
+        orders = orders.filter(supplier__name=selected_supplier)
 
     # Para birimi filtresi
     if selected_currency:
-        sales = sales.filter(currency=selected_currency)
+        orders = orders.filter(currency=selected_currency)
+        
+    # Ürün filtresi
+    if selected_product:
+        orders = orders.filter(product__name=selected_product)
+        
+    # Renk filtresi
+    if selected_color:
+        orders = orders.filter(product__color=selected_color)
 
     # Bugünkü döviz kurlarını al
     latest_usd = Currency.objects.filter(name='USD').order_by('-date').first()
@@ -245,20 +354,20 @@ def sales_report(request):
     usd_rate = latest_usd.rate if latest_usd else Decimal('31.00')  # Varsayılan değerler
     eur_rate = latest_eur.rate if latest_eur else Decimal('33.00')  # Varsayılan değerler
 
-    # Her satışın toplamını ve TL karşılığını hesapla
-    filtered_sales = []
+    # Her siparişin toplamını ve TL karşılığını hesapla
+    filtered_orders = []
     total_usd = total_eur = total_try = Decimal('0')
     total_usd_tl = total_eur_tl = Decimal('0')
 
-    for sale in sales:
-        total_price = sale.sale_price * sale.meters
+    for order in orders:
+        total_price = order.purchase_price * order.meters
         total_price_tl = Decimal('0')
 
-        if sale.currency == 'USD':
+        if order.currency == 'USD':
             total_usd += total_price
             total_price_tl = total_price * usd_rate
             total_usd_tl += total_price_tl
-        elif sale.currency == 'EUR':
+        elif order.currency == 'EUR':
             total_eur += total_price
             total_price_tl = total_price * eur_rate
             total_eur_tl += total_price_tl
@@ -266,24 +375,30 @@ def sales_report(request):
             total_try += total_price
             total_price_tl = total_price
 
-        filtered_sales.append({
-            'date': sale.date,
-            'customer_name': sale.customer.name,
-            'product': sale.product.name,
-            'quantity': sale.meters,
-            'unit_price': sale.sale_price,
-            'currency': sale.get_currency_display(),  # Para birimi görünen adını kullan
+        filtered_orders.append({
+            'date': order.order_date,
+            'supplier_name': order.supplier.name,
+            'customer_name': order.customer.name,
+            'product': order.product.name,
+            'supplier_product': order.product.supplier_product_name,
+            'color': order.product.color or 'Belirtilmemiş',
+            'quantity': order.meters,
+            'unit_price': order.purchase_price,
+            'currency': order.get_currency_display(),
             'total_price': total_price,
             'total_price_tl': total_price_tl,
+            'status': order.get_status_display(),
         })
 
     grand_total_tl = total_usd_tl + total_eur_tl + total_try
 
-    # Mevcut müşterileri dropdown'a göndermek için
-    customers = Customer.objects.values_list('name', flat=True).distinct()
+    # Mevcut tedarikçileri, ürünleri ve renkleri dropdown'a göndermek için
+    suppliers = Supplier.objects.values_list('name', flat=True).distinct()
+    products = Product.objects.values_list('name', flat=True).distinct()
+    colors = Product.objects.exclude(color__isnull=True).exclude(color='').values_list('color', flat=True).distinct()
 
     context = {
-        'filtered_sales': filtered_sales,
+        'filtered_orders': filtered_orders,
         'total_usd': total_usd,
         'total_eur': total_eur,
         'total_try': total_try,
@@ -292,11 +407,95 @@ def sales_report(request):
         'grand_total_tl': grand_total_tl,
         'date_from': date_from,
         'date_to': date_to,
+        'selected_supplier': selected_supplier,
+        'selected_currency': selected_currency,
+        'selected_product': selected_product,
+        'selected_color': selected_color,
+        'suppliers': suppliers,
+        'products': products,
+        'colors': colors,
+    }
+    return render(request, 'products/purchase_report.html', context)
+
+
+def profit_report(request):
+    # Tarih filtresi
+    date_from = request.GET.get('from')
+    date_to = request.GET.get('to')
+    selected_customer = request.GET.get('customer')
+    selected_supplier = request.GET.get('supplier')
+    selected_currency = request.GET.get('currency')
+    selected_product = request.GET.get('product')
+
+    # Satış ve alış verilerini filtrele
+    sales = Sale.objects.all()
+    orders = Order.objects.all()
+
+    if date_from:
+        sales = sales.filter(date__gte=date_from)
+        orders = orders.filter(order_date__gte=date_from)
+    if date_to:
+        sales = sales.filter(date__lte=date_to)
+        orders = orders.filter(order_date__lte=date_to)
+    if selected_customer:
+        sales = sales.filter(customer__name=selected_customer)
+    if selected_supplier:
+        orders = orders.filter(supplier__name=selected_supplier)
+    if selected_currency:
+        sales = sales.filter(currency=selected_currency)
+        orders = orders.filter(currency=selected_currency)
+    if selected_product:
+        sales = sales.filter(product__name=selected_product)
+        orders = orders.filter(product__name=selected_product)
+
+    # Döviz kurlarını al
+    latest_usd = Currency.objects.filter(name='USD').order_by('-date').first()
+    latest_eur = Currency.objects.filter(name='EUR').order_by('-date').first()
+    usd_rate = latest_usd.rate if latest_usd else Decimal('31.00')
+    eur_rate = latest_eur.rate if latest_eur else Decimal('33.00')
+
+    # Kar hesaplamaları
+    total_profit = Decimal('0')
+    profit_data = []
+
+    for sale in sales:
+        # İlgili ürünün alış fiyatını bul
+        product = sale.product
+        purchase_price = product.purchase_price
+        
+        # Kar hesapla
+        profit_per_meter = sale.sale_price - purchase_price
+        total_profit += profit_per_meter * sale.meters
+        
+        profit_data.append({
+            'date': sale.date,
+            'customer': sale.customer.name,
+            'product': product.name,
+            'sale_price': sale.sale_price,
+            'purchase_price': purchase_price,
+            'profit_per_meter': profit_per_meter,
+            'meters': sale.meters,
+            'total_profit': profit_per_meter * sale.meters,
+            'currency': sale.currency
+        })
+
+    # Mevcut müşteri ve tedarikçileri dropdown'a gönder
+    customers = Customer.objects.values_list('name', flat=True).distinct()
+    suppliers = Supplier.objects.values_list('name', flat=True).distinct()
+
+    context = {
+        'profit_data': profit_data,
+        'total_profit': total_profit,
+        'date_from': date_from,
+        'date_to': date_to,
         'selected_customer': selected_customer,
+        'selected_supplier': selected_supplier,
         'selected_currency': selected_currency,
         'customers': customers,
+        'suppliers': suppliers,
+        'products': Product.objects.values_list('name', flat=True).distinct(),
     }
-    return render(request, 'products/sales_report.html', context)
+    return render(request, 'products/profit_report.html', context)
 
 
 
@@ -380,12 +579,20 @@ def add_order(request):
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
-            order = form.save()
+            order = form.save(commit=False)
+            # Ürün rengini kaydet
+            if form.cleaned_data.get('color'):
+                product = order.product
+                product.color = form.cleaned_data.get('color')
+                product.save()
+            order.save()
             messages.success(request, 'Sipariş başarıyla oluşturuldu.')
             return redirect('order_list')
         else:
             messages.error(request, 'Lütfen formu kontrol ediniz.')
-    return redirect('order_list')
+    else:
+        form = OrderForm()
+    return render(request, 'products/add_order.html', {'form': form})
 
 @login_required
 def update_order_status(request, pk):

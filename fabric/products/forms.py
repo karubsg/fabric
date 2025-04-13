@@ -145,9 +145,28 @@ class SupplierForm(forms.ModelForm):
         self.helper.form_tag = False
 
 class OrderForm(forms.ModelForm):
+    # Ürün rengini seçmek için özel alan
+    color = forms.CharField(required=False, label="Renk", widget=forms.TextInput(attrs={'class': 'form-control'}), help_text="Ürün rengini belirtin")
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ürün seçiminde sadece firma adı - tedarikçi adı - tedarikçi ürün kodu göster
+        self.fields['product'].label_from_instance = lambda obj: f"{obj.name} - {obj.supplier.name} - {obj.supplier_product_name}"
+        # Ürün seçildiğinde otomatik olarak tedarikçiyi doldur
+        if 'product' in self.data:
+            try:
+                product_id = int(self.data.get('product'))
+                product = Product.objects.get(id=product_id)
+                self.fields['supplier'].initial = product.supplier.id
+                # Ürün rengi varsa form alanını doldur
+                if product.color:
+                    self.fields['color'].initial = product.color
+            except (ValueError, Product.DoesNotExist):
+                pass
+        
     class Meta:
         model = Order
-        fields = ['product', 'customer', 'supplier', 'meters', 'deadline_date', 
+        fields = ['product', 'customer', 'supplier', 'color', 'meters', 'deadline_date', 
                  'purchase_price', 'sale_price', 'currency', 'notes']
         widgets = {
             'deadline_date': forms.DateInput(attrs={'type': 'date'}),

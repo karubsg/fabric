@@ -1,0 +1,125 @@
+{% extends 'products/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Alış Raporu - FabricCRM{% endblock %}
+{% block header %}Tedarikçi Alış Raporu{% endblock %}
+
+{% block actions %}
+<form class="d-flex align-items-center flex-wrap gap-2" method="get">
+    <input type="date" name="from" value="{{ date_from }}" class="form-control" placeholder="Başlangıç">
+    <input type="date" name="to" value="{{ date_to }}" class="form-control" placeholder="Bitiş">
+    <select name="supplier" class="form-select">
+        <option value="">Tüm Tedarikçiler</option>
+        {% for supplier in suppliers %}
+            <option value="{{ supplier }}" {% if selected_supplier == supplier %}selected{% endif %}>
+                {{ supplier }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="product" class="form-select">
+        <option value="">Tüm Ürünler</option>
+        {% for product in products %}
+            <option value="{{ product }}" {% if selected_product == product %}selected{% endif %}>
+                {{ product }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="color" class="form-select">
+        <option value="">Tüm Renkler</option>
+        {% for color in colors %}
+            <option value="{{ color }}" {% if selected_color == color %}selected{% endif %}>
+                {{ color|default:"Belirtilmemiş" }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="currency" class="form-select">
+        <option value="">Tüm Para Birimleri</option>
+        <option value="TL" {% if selected_currency == 'TL' %}selected{% endif %}>₺ (TL)</option>
+        <option value="USD" {% if selected_currency == 'USD' %}selected{% endif %}>$ (USD)</option>
+        <option value="EUR" {% if selected_currency == 'EUR' %}selected{% endif %}>€ (EUR)</option>
+    </select>
+    <button type="submit" class="btn btn-outline-primary">
+        <i class="bi bi-search"></i> Filtrele
+    </button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% if filtered_orders %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Tedarikçi</th>
+                        <th>Müşteri</th>
+                        <th>Firma Ürün</th>
+                        <th>Tedarikçi Ürün</th>
+                        <th>Renk</th>
+                        <th>Miktar</th>
+                        <th>Birim Fiyat</th>
+                        <th>Para Birimi</th>
+                        <th>Toplam</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in filtered_orders %}
+                    <tr>
+                        <td>{{ order.date|date:"d.m.Y" }}</td>
+                        <td>{{ order.supplier_name }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>{{ order.product }}</td>
+                        <td>{{ order.supplier_product }}</td>
+                        <td>{{ order.color }}</td>
+                        <td>{{ order.quantity }} metre</td>
+                        <td>{{ order.unit_price|floatformat:2 }}</td>
+                        <td>{{ order.currency }}</td>
+                        <td>{{ order.total_price|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge {% if order.status == 'Beklemede' %}bg-warning{% elif order.status == 'Tedarikçi Onayladı' %}bg-info{% elif order.status == 'Üretimde' %}bg-primary{% elif order.status == 'Hazır' %}bg-success{% elif order.status == 'Teslim Alındı' %}bg-secondary{% elif order.status == 'Gecikti' %}bg-danger{% else %}bg-dark{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted">
+                            <i class="bi bi-exclamation-circle"></i> Seçilen kriterlere uygun sipariş bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-secondary">
+                        <td colspan="9" class="text-end fw-bold">Toplam (USD):</td>
+                        <td class="fw-bold">{{ total_usd|floatformat:2 }} USD</td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-secondary">
+                        <td colspan="9" class="text-end fw-bold">Toplam (EUR):</td>
+                        <td class="fw-bold">{{ total_eur|floatformat:2 }} EUR</td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-secondary">
+                        <td colspan="9" class="text-end fw-bold">Toplam (TL):</td>
+                        <td class="fw-bold">{{ total_try|floatformat:2 }} TL</td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-info">
+                        <td colspan="9" class="text-end fw-bold">Genel Toplam (TL):</td>
+                        <td class="fw-bold">{{ grand_total_tl|floatformat:2 }} TL</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+            <div class="alert alert-warning">Seçilen kriterlere göre sipariş bulunamadı.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
